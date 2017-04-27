@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Demo</title>
+</head>
+<body>
+
+	<p id="symbols"> &Sigma; = {0, 1} </p>
+	<p id="samples"></p>
+	<p id="testing"></p>
+
+
+
+	<script>
+		var symbols = ['0', '1'];
+		var samples = ['', '00', '11', '1001'];
+
+		function init() {
+			var samplesText = 'W = {'
+			for (var i = 0; i < samples.length; ++i) {
+
+				samplesText += emptyToLambda(samples[i]);
+				if (i < samples.length - 1) {
+					samplesText += ', ';
+				}
+			}
+			samplesText += "}";
+			document.getElementById('samples').innerHTML = samplesText;
+
+			var symbolsText = '&Sigma; = {';
+			for (var i = 0; i < symbols.length; ++i) {
+				symbolsText += emptyToLambda(symbols[i]);
+				if (i < symbols.length - 1) {
+					symbolsText += ', ';
+				}
+			}
+			symbolsText += '}';
+			document.getElementById('symbols').innerHTML = symbolsText;
+		}
+
+		function emptyToLambda(str) {
+			if (str === '') {
+				return '&lambda;';
+			}
+			return str;
+		}
+
+		function membership(element) {
+			var i = samples.findIndex(function (e) { return element === e;} );
+			if (i != -1) return true;
+			return false;
+		}
+
+
+		function teacher(M) {
+
+		}
+
+
+		function learner() {
+			var observationTable = new ObservationTable([''], [''], ['0', '1']);
+			
+		}
+
+
+		function ObservationTable(S0, E0, A0) {
+			this.S = [];
+			this.E = [];
+			this.A = [];
+			this.membershipPrefixes = [];  // prefixes includes S
+			this.membershipTable = [];
+
+			
+
+			this.init = function () {
+				for (var i = 0; i < S0.length; ++i) {
+					this.membershipPrefixes.push(S0[i]);
+					this.S.push(S0[i]);
+				}
+				for (var i = 0; i < E0.length; ++i) {
+					this.E.push(E0[i]);
+				}
+
+				for (var i = 0; i < A0.length; ++i) {
+					this.A.push(A0[i]);
+				}
+
+				for (var i = 0; i < S0.length; ++i) {
+					var r = []
+					for (var j = 0; j < E0.length; ++j) {
+						r.push(membership(S0[i] + E0[j]));
+					}
+					this.membershipTable.push(r);
+				}
+
+				for (var i = 0; i < this.S.length; ++i) {
+					for (var j = 0; j < this.A.length; ++j) {
+						this.membershipPrefixes.push(this.S[i] + this.A[j]);
+						var r = []
+						for (var k = 0; k < this.E.length; ++k) {
+							
+							r.push(membership(this.S[i] + this.A[j] + this.E[k]));
+						}
+						this.membershipTable.push(r);
+					}
+				}
+			}
+
+			this.exists = function (array, e) {
+				var i = 0;
+				for (var i = 0; i < array.length && array[i] !== e; ++i) { }
+				return i === array.length;
+			}
+
+			this.getRowByIndex = function(i){
+				return this.membershipTable[i];
+			}
+
+			this.getRow = function (s) {
+				for (var i = 0; i < this.membershipPrefixes.length; ++i) {
+					if (this.membershipPrefixes[i] === s) {
+						return this.membershipTable[i];
+					}
+				}
+			}
+
+			this.isClosed = function () {
+				for (var i = 0; i < this.S.length; ++i) {
+					for (var j = 0; j < this.A.length; ++j) {
+							var row1 = this.getRow(this.S[i] + this.A[j]);
+							for (var k = 0; k < this.S.length; ++k) {
+								var row2 = this.getRowByIndex(k);
+								if (this.rowEquals(row1, row2)) return true;
+						}
+					}
+				}
+				return false;
+			}
+
+			this.isConsistent = function () {
+				for (var i = 0; i < this.S.length; ++i) {
+					var rowi = this.getRowByIndex(i);
+					for (var j = i + 1; j < this.S.length; ++j) {
+						var rowj = this.getRowByIndex(j);
+						if (this.rowEquals(rowi, rowj)) {
+							for (var k = 0; k < this.A.length; ++k) {
+								if (!this.rowEquals(this.getRow(this.S[i] + this.A[k]), this.getRow(this.S[j] + this.A[k]))) {
+									return false;
+								}
+							}
+						}
+					}
+				}
+				return true;
+			}
+
+			this.rowEquals = function (a1, a2) {
+				if (a1.length === a2.length) {
+					for (var i = 0; i < a1.length; ++i) {
+						if (a1[i] !== a2[i]) return false;
+					}
+					return true;
+				}
+				return false;
+			}
+
+			this.extendBySuffix = function (e) {
+				this.E.push(e);
+				for (var i = 0; i < this.membershipTable.length; ++i) {
+					this.membershipTable[i].push(membership(this.membershipPrefixes[i] + e));
+				}
+			}
+
+			this.extendByPrefix = function (s) {
+				if (!this.exists(this.S, s)) { this.S.push(s); }
+				if (!this.exists(this.membershipPrefixes)) {
+					this.membershipPrefixes.push(s);
+					var r = []
+					for (var i = 0; i < this.E.length; ++i) {
+						r.push(membership(s + this.E[i]));
+					}
+					this.membershipTable.push(r);
+				}
+			}
+
+			// run initialization function: constructor!
+
+			this.init();
+		}
+
+		function failed(message) {
+			console.log(message);
+			document.getElementById('testing').innerHTML = message;
+			document.getElementById('testing').style.color = 'red';
+		}
+
+		function succeeded(message) {
+			document.getElementById('testing').innerHTML = message;
+			document.getElementById('testing').style.color = 'green';
+		}
+
+		function testConstructor() {
+			var t = new ObservationTable([''], [''], ['0', '1']);
+			if (t.S.length !== 1) console.log('S is not set correctly.');
+			if (t.S[0] !== '') console.log('S should has &lambda; t.S[0] : ' + emptyToLambda(t.S[0]));
+
+			if (t.E.length !== 1) console.log('E is not set correctly.');
+			if (t.E[0] !== '') console.log('E[0] should be &lambda; But E[0]: ' + emptyToLambda(t.E[0]));
+			if (t.membershipTable.length !== 3) console.log('T is not set correctly, T.length = ' + t.T.length);
+		}
+
+		function testGetRow() {
+			var t = new ObservationTable([''], [''], ['0', '1']);
+			
+			if (t.getRow('').length === 0) console.log('failed to get &lambda; row');
+			if (t.getRow('0').length === 0) console.log('failed to get 0 row');
+			if (t.getRow('1').length === 0) console.log('failed to get 1 row');
+		}
+
+		function testGetRowByIndex() {
+			var t = new ObservationTable([''], [''], ['0', '1']);
+
+			if (t.getRowByIndex(0).length === 0) console.log('failed to get &lambda; row');
+			if (t.getRowByIndex(1).length === 0) console.log('failed to get 0 row');
+			if (t.getRowByIndex(2).length === 0) console.log('failed to get 1 row');
+
+			if (!t.rowEquals(t.getRow('0'), t.getRowByIndex(1))) console.log('failed to get row. row not equal');
+		}
+
+		function testIsClosed() {
+			var t = new ObservationTable([''], [''], ['0', '1']);
+			if (t.isClosed()) console.log('t is actually NOT closed! Please check!');
+
+			var t1 = new ObservationTable(['', '0', '1', '11'], [''], ['0', '1']);
+
+			if (!t1.isClosed()) console.log('t1 should be closed. Please check!');
+
+			var t2 = new ObservationTable(['', '0'], [''], ['0', '1']);
+			if (!t2.isClosed()) console.log('t2 should be closed. Please check!');
+		}
+
+		function testIsConsistent() {
+			var t = new ObservationTable([''], [''], ['0', '1']);
+			if (!t.isConsistent()) console.log('t should be consistent. Please check!');
+
+			var t1 = new ObservationTable(['', '0', '1', '11'], [''], ['0', '1']);
+			if (t1.isConsistent()) console.log('t1 should NOT be consistent. Please check!');
+		}
+
+		init();
+		testConstructor();
+		testGetRow();
+		testGetRowByIndex();
+		testIsClosed();
+		testIsConsistent();
+
+	</script>
+
+</body>
+</html>
