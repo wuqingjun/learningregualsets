@@ -53,10 +53,18 @@
 
 
 		function teacher(M) {
+			var state = 0;
 			for (var i = 0; i < samples.length; ++i) {
-				var s = '';
-				
+				for (var j = 0; j < samples[i].length; ++j) {
+					for (var k = 0; k < M[3].length; ++k) {
+						if (M[3][k] === samples[i][j]) {
+							state = M[2][state][k] - '0'; // should be string to int.
+						}
+					}
+				}
+				if (state !== 0) return samples[i];
 			}
+			return null;
 		}
 
 
@@ -77,8 +85,9 @@
 			} while (null !== isConsistentCand || null !== isClosedCand);
 
 			var M = observationTable.makeConjecture();
-
-
+			var counterExmaple = teacher(M);
+			if (null === counterExmaple) { }// end;
+			else { } // continue
 		}
 
 
