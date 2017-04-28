@@ -5,7 +5,7 @@
 </head>
 <body>
 
-	<p id="symbols"> &Sigma; = {0, 1} </p>
+	<p id="symbols"></p>
 	<p id="samples"></p>
 	<p id="testing"></p>
 
@@ -13,7 +13,7 @@
 
 	<script>
 		var symbols = ['0', '1'];
-		var samples = ['', '00', '11', '1001'];
+		var samples = ['', '00', '11', '1001', '1100', '0101', '0110', '1111'];
 
 		function init() {
 			var samplesText = 'W = {'
@@ -47,19 +47,35 @@
 
 		function membership(element) {
 			var i = samples.findIndex(function (e) { return element === e;} );
-			if (i != -1) return true;
-			return false;
+			if (i != -1) return '1';
+			return '0';
 		}
 
 
 		function teacher(M) {
-
+			
 		}
 
 
 		function learner() {
 			var observationTable = new ObservationTable([''], [''], ['0', '1']);
-			
+			var isConsistentCand = null;
+			var isClosedCand = null;
+			do {
+				isConsistentCand = observationTable.findNotConsistent();
+				isClosedCand = observationTable.findNotClosed();
+				if (null !== isConsistentCand) {
+					observationTable.extendByPrefix(isConsistentCand);
+				}
+				
+				if (null !== isClosedCand) {
+					observationTable.extendByPrefix(isClosedCand);
+				}
+			} while (null !== isConsistentCand || null !== isClosedCand);
+
+			var M = observationTable.makeConjecture();
+
+
 		}
 
 
@@ -69,8 +85,6 @@
 			this.A = [];
 			this.membershipPrefixes = [];  // prefixes includes S
 			this.membershipTable = [];
-
-			
 
 			this.init = function () {
 				for (var i = 0; i < S0.length; ++i) {
@@ -95,13 +109,14 @@
 
 				for (var i = 0; i < this.S.length; ++i) {
 					for (var j = 0; j < this.A.length; ++j) {
-						this.membershipPrefixes.push(this.S[i] + this.A[j]);
-						var r = []
-						for (var k = 0; k < this.E.length; ++k) {
-							
-							r.push(membership(this.S[i] + this.A[j] + this.E[k]));
+						if (!this.exists(this.membershipPrefixes, this.S[i] + this.A[j])) {
+							this.membershipPrefixes.push(this.S[i] + this.A[j]);
+							var r = []
+							for (var k = 0; k < this.E.length; ++k) {
+								r.push(membership(this.S[i] + this.A[j] + this.E[k]));
+							}
+							this.membershipTable.push(r);
 						}
-						this.membershipTable.push(r);
 					}
 				}
 			}
@@ -109,11 +124,7 @@
 			this.exists = function (array, e) {
 				var i = 0;
 				for (var i = 0; i < array.length && array[i] !== e; ++i) { }
-				return i === array.length;
-			}
-
-			this.getRowByIndex = function(i){
-				return this.membershipTable[i];
+				return i !== array.length;
 			}
 
 			this.getRow = function (s) {
@@ -125,33 +136,43 @@
 			}
 
 			this.isClosed = function () {
+				return null === this.findNotClosed();
+			}
+
+			this.findNotClosed = function () {
 				for (var i = 0; i < this.S.length; ++i) {
 					for (var j = 0; j < this.A.length; ++j) {
-							var row1 = this.getRow(this.S[i] + this.A[j]);
-							for (var k = 0; k < this.S.length; ++k) {
-								var row2 = this.getRowByIndex(k);
-								if (this.rowEquals(row1, row2)) return true;
-						}
+						var cand = this.S[i] + this.A[j];
+						var row = this.getRow(cand);
+						var k = 0;
+						for (; k < this.S.length && !this.rowEquals(row, this.getRow(this.S[k])) ; ++k) { }
+						if (k === this.S.length) return cand;
 					}
 				}
-				return false;
+				return null;
 			}
 
 			this.isConsistent = function () {
+				return null === this.findNotConsistent();
+			}
+
+			this.findNotConsistent = function () {
 				for (var i = 0; i < this.S.length; ++i) {
-					var rowi = this.getRowByIndex(i);
+					var rowi = this.getRow(this.S[i]);
 					for (var j = i + 1; j < this.S.length; ++j) {
-						var rowj = this.getRowByIndex(j);
+						var rowj = this.getRow(this.S[j]);
 						if (this.rowEquals(rowi, rowj)) {
 							for (var k = 0; k < this.A.length; ++k) {
-								if (!this.rowEquals(this.getRow(this.S[i] + this.A[k]), this.getRow(this.S[j] + this.A[k]))) {
-									return false;
+								var rowi = this.getRow(this.S[i] + this.A[k]);
+								var rowj = this.getRow(this.S[j] + this.A[k]);
+								for (var l = 0; l < this.E.length; ++l) {
+									if (rowi[l] !== rowj[l]) return this.A[k] + this.E[l];
 								}
 							}
 						}
 					}
 				}
-				return true;
+				return null;
 			}
 
 			this.rowEquals = function (a1, a2) {
@@ -173,7 +194,7 @@
 
 			this.extendByPrefix = function (s) {
 				if (!this.exists(this.S, s)) { this.S.push(s); }
-				if (!this.exists(this.membershipPrefixes)) {
+				if (!this.exists(this.membershipPrefixes, s)) {
 					this.membershipPrefixes.push(s);
 					var r = []
 					for (var i = 0; i < this.E.length; ++i) {
@@ -181,7 +202,59 @@
 					}
 					this.membershipTable.push(r);
 				}
+
+				// membership queries for s+a for all a in A.
+				for (var j = 0; j < this.A.length; ++j) {
+					if (!this.exists(this.membershipPrefixes, s + this.A[j])) {
+						this.membershipPrefixes.push(s + this.A[j]);
+						var p = []
+						for (var k = 0; k < this.E.length; ++k) {
+							p.push(membership(s + this.A[j] + this.E[k]));
+						}
+						this.membershipTable.push(p);
+					}
+				}
 			}
+
+			this.extendByAllPrefixes = function(s){
+				for (var i = 0; i <= s.length; ++i) {
+					var t = s.substring(0, i);
+					this.extendByPrefix(t);
+				}
+			}
+
+			this.makeConjecture = function () {
+				var states = [];
+				var prefixes = [];
+				var transitionTable = [];
+				for (var i = 0; i < this.S.length; ++i) {
+					var row = this.getRow(this.S[i]);
+					var j = 0;
+					for (; j < states.length && !this.rowEquals(row, states[j]); ++j) {
+						
+					}
+					if (j === states.length) {
+						states.push(row);
+						prefixes.push(this.S[i]);
+					}
+				}
+				for (var i = 0; i < states.length; ++i) {
+					var tRow = [];
+					for (var j = 0; j < this.A.length; ++j) {
+						var s = prefixes[i] + this.A[j];
+						var r = this.getRow(s);
+						console.log(r);
+						for (var k = 0; k < states.length; ++k) {
+							if (this.rowEquals(states[k], r)) {
+								tRow.push(k);
+							}
+						}
+					}
+					transitionTable.push(tRow);
+				}
+				return [states, prefixes, transitionTable, this.A];
+			}
+
 
 			// run initialization function: constructor!
 
@@ -217,16 +290,6 @@
 			if (t.getRow('1').length === 0) console.log('failed to get 1 row');
 		}
 
-		function testGetRowByIndex() {
-			var t = new ObservationTable([''], [''], ['0', '1']);
-
-			if (t.getRowByIndex(0).length === 0) console.log('failed to get &lambda; row');
-			if (t.getRowByIndex(1).length === 0) console.log('failed to get 0 row');
-			if (t.getRowByIndex(2).length === 0) console.log('failed to get 1 row');
-
-			if (!t.rowEquals(t.getRow('0'), t.getRowByIndex(1))) console.log('failed to get row. row not equal');
-		}
-
 		function testIsClosed() {
 			var t = new ObservationTable([''], [''], ['0', '1']);
 			if (t.isClosed()) console.log('t is actually NOT closed! Please check!');
@@ -247,12 +310,110 @@
 			if (t1.isConsistent()) console.log('t1 should NOT be consistent. Please check!');
 		}
 
+		function testExtendSuffix() {
+			var t = new ObservationTable(['', '0', '1', '11'], [''], ['0', '1']);
+			var oldSLength = t.S.length;
+			var oldELength = t.E.length;
+			var oldMembershipPrefixLength = t.membershipPrefixes.length;
+			var oldMembershiopTableLength = t.membershipTable.length;
+
+			t.extendBySuffix('0');
+			if (!t.rowEquals(t.getRow(''), ['1', '0'])) console.log('row is not set correctly after extending by suffix!');
+			if (!t.rowEquals(t.getRow('1'), ['0', '0'])) console.log('row is not set correctly after extending by suffix!');
+			if (!t.rowEquals(t.getRow('11'), ['1', '0'])) console.log('row is not set correctly after extending by suffix!');
+			if (!t.rowEquals(t.getRow('00'), ['1', '0'])) console.log('row is not set correctly after extending by suffix!');
+			if (!t.rowEquals(t.getRow('110'), ['0', '1'])) console.log('row is not set correctly after extending by suffix!');
+			if (!t.rowEquals(t.getRow('111'), ['0', '0'])) console.log('row is not set correctly after extending by suffix!');
+
+			if (t.S.length !== oldSLength) console.log('t.S should remain unchanged!');
+			if (t.E.length === oldELength) console.log('t.E should be extended!');
+			if (t.membershipPrefixes.length !== oldMembershipPrefixLength) console.log('t.membershipPrefixes should remain unchanged!');
+			if (t.membershipTable.length !== oldMembershiopTableLength) console.log('t.membershipTable should remain unchanged!');
+
+		}
+
+
+		function testExists() {
+			var t = new ObservationTable(['', '0'], [''], ['0', '1']);
+
+			if (!t.exists(t.A, '0')) console.log('exists failed!');
+			if (!t.exists(t.A, '1')) console.log('exists failed!');
+		}
+
+		function testExtendPrefix() {
+			var t = new ObservationTable(['', '0'], [''], ['0', '1']);
+
+			t.extendByPrefix('1');
+			t.extendByPrefix('11');
+
+			if (t.S.length != ['', '0', '1', '11'].length) console.log('extend By Prefix is failed, t.S: ' + t.S);
+			if (t.membershipPrefixes.length !== ['', '0', '1', '11', '00', '01', '10', '110', '111'].length) console.log('extend By Prefix is failed');
+			if (!t.rowEquals(t.getRow('110'), ['0'])) console.log('membership query is wrong afer extending prefix');
+			if (!t.rowEquals(t.getRow('01'), ['0'])) console.log('membership query is wrong afer extending prefix');
+			if (!t.rowEquals(t.getRow('00'), ['1'])) console.log('membership query is wrong afer extending prefix');
+		}
+
+		function testExtendAllPrefixes() {
+			var t = new ObservationTable(['', '0'], [''], ['0', '1']);
+			t.extendByAllPrefixes('11');
+
+			if (t.S.length != ['', '0', '1', '11'].length) console.log('extend By Prefix is failed, t.S: ' + t.S);
+			if (t.membershipPrefixes.length !== ['', '0', '1', '11', '00', '01', '10', '110', '111'].length) console.log('extend By Prefix is failed');
+			if (!t.rowEquals(t.getRow('110'), ['0'])) console.log('membership query is wrong afer extending prefix');
+			if (!t.rowEquals(t.getRow('01'), ['0'])) console.log('membership query is wrong afer extending prefix');
+			if (!t.rowEquals(t.getRow('00'), ['1'])) console.log('membership query is wrong afer extending prefix');
+		}
+
+		function testFindNotClosed() {
+			var t = new ObservationTable([''], [''], ['0', '1']);
+			if (t.isClosed()) console.log('t is actually NOT closed! Please check!');
+			var res = t.findNotClosed();
+			if (res !== '0') console.log('t is not closed, and here is the s: ' + res);
+
+
+			var t1 = new ObservationTable(['', '0', '1', '11'], [''], ['0', '1']);
+
+			var res2 = t1.findNotClosed();
+			if (null !== res2) console.log('t1 should be closed. Please check! s: ' + res);
+		}
+
+		function testFindNotConsistent() {
+			var t = new ObservationTable([''], [''], ['0', '1']);
+			var res = t.findNotConsistent();
+			if (null !== res) console.log('t should be consistent. Please check!');
+
+			var t1 = new ObservationTable(['', '0', '1', '11'], [''], ['0', '1']);
+			if (null === t1) console.log('t1 should NOT be consistent. Please check!');
+		}
+
+		function testMakeConjecture() {
+			var t = new ObservationTable(['', '0'], [''], ['0', '1']);
+
+			var M = t.makeConjecture();
+
+			console.log(M[2]);
+
+			var t2 = new ObservationTable(['', '0', '1', '11', '01', '011'], ['', '0', '1'], ['0', '1']);
+
+			var M2 = t2.makeConjecture();
+			console.log(M2[0]);
+			console.log(M2[1]);
+			console.log(M2[2]);
+			console.log(M2[3]);
+		}
+
+		testExists();
 		init();
 		testConstructor();
 		testGetRow();
-		testGetRowByIndex();
 		testIsClosed();
 		testIsConsistent();
+		testExtendSuffix();
+		testExtendPrefix();
+		testExtendAllPrefixes();
+		testFindNotClosed();
+		testFindNotConsistent();
+		testMakeConjecture();
 
 	</script>
 
