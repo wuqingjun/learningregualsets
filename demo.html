@@ -271,7 +271,6 @@
 				return [states, prefixes, transitionTable, this.A];
 			}
 
-
 			// run initialization function: constructor!
 
 			this.init();
@@ -407,15 +406,25 @@
 
 			var M = t.makeConjecture();
 
-			console.log(M[2]);
-
 			var t2 = new ObservationTable(['', '0', '1', '11', '01', '011'], ['', '0', '1'], ['0', '1']);
 
 			var M2 = t2.makeConjecture();
-			console.log(M2[0]);
-			console.log(M2[1]);
-			console.log(M2[2]);
-			console.log(M2[3]);
+		}
+
+		function testTeacher() {
+		    var t = new ObservationTable(['', '0'], [''], ['0', '1']);
+
+		    var M = t.makeConjecture();
+
+		    var res1 = teacher(M);
+		    if (res1 !== '11') console.log('teacher is giving wrong answer: ' + res1);
+
+		    var t2 = new ObservationTable(['', '0', '1', '11', '01', '011'], ['', '0', '1'], ['0', '1']);
+
+		    var M2 = t2.makeConjecture();
+		    var res2 = teacher(M2);
+		    if (res2 !== null) console.log('teacher is giving wrong answer: ' + res2);
+
 		}
 
 		testExists();
@@ -430,6 +439,7 @@
 		testFindNotClosed();
 		testFindNotConsistent();
 		testMakeConjecture();
+		testTeacher();
 
 	</script>
 
