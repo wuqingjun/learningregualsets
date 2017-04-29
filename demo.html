@@ -58,7 +58,7 @@
 				for (var j = 0; j < samples[i].length; ++j) {
 					for (var k = 0; k < M[3].length; ++k) {
 						if (M[3][k] === samples[i][j]) {
-							state = M[2][state][k] - '0'; // should be string to int.
+							state = M[2][state][k];
 						}
 					}
 				}
@@ -72,22 +72,26 @@
 			var observationTable = new ObservationTable([''], [''], ['0', '1']);
 			var isConsistentCand = null;
 			var isClosedCand = null;
+			var counterExmaple = null;
 			do {
-				isConsistentCand = observationTable.findNotConsistent();
-				isClosedCand = observationTable.findNotClosed();
-				if (null !== isConsistentCand) {
-					observationTable.extendByPrefix(isConsistentCand);
-				}
-				
-				if (null !== isClosedCand) {
-					observationTable.extendByPrefix(isClosedCand);
-				}
-			} while (null !== isConsistentCand || null !== isClosedCand);
+				do {
+					isConsistentCand = observationTable.findNotConsistent();
+					isClosedCand = observationTable.findNotClosed();
+					if (null !== isConsistentCand) {
+						observationTable.extendByPrefix(isConsistentCand);
+					}
 
-			var M = observationTable.makeConjecture();
-			var counterExmaple = teacher(M);
-			if (null === counterExmaple) { }// end;
-			else { } // continue
+					if (null !== isClosedCand) {
+						observationTable.extendByPrefix(isClosedCand);
+					}
+				} while (null !== isConsistentCand || null !== isClosedCand);
+
+				var M = observationTable.makeConjecture();
+				counterExmaple = teacher(M);
+				if (null !== counterExmaple) {
+					observationTable.extendByAllPrefixes(counterExmaple);
+				}
+			} while (counterExmaple !== null);
 		}
 
 
