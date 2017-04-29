@@ -14,6 +14,9 @@
 	<script>
 		var symbols = ['0', '1'];
 		var samples = ['', '00', '11', '1001', '1100', '0101', '0110', '1111'];
+//		var counterExampleCandidates = ['', '0', '1', '00', '01', '10', '11', '000', '001', '010', '011', '100', '101', '111'];
+		var counterExampleCandidates = ['11', '011'];
+
 
 		function init() {
 			var samplesText = 'W = {'
@@ -51,21 +54,42 @@
 			return '0';
 		}
 
+		function exists(array, e) {
+		    var i = 0;
+		    for (var i = 0; i < array.length && array[i] !== e; ++i) { }
+		    return i !== array.length;
+		}
+		//function teacher(M) {
+		//	var state = 0;
+		//	for (var i = 0; i < samples.length; ++i) {
+		//		for (var j = 0; j < samples[i].length; ++j) {
+		//			for (var k = 0; k < M[3].length; ++k) {
+		//				if (M[3][k] === samples[i][j]) {
+		//					state = M[2][state][k];
+		//				}
+		//			}
+		//		}
+		//		if (state !== 0) return samples[i];
+		//	}
+		//	return null;
+        //}
 
 		function teacher(M) {
-			var state = 0;
-			for (var i = 0; i < samples.length; ++i) {
-				for (var j = 0; j < samples[i].length; ++j) {
-					for (var k = 0; k < M[3].length; ++k) {
-						if (M[3][k] === samples[i][j]) {
-							state = M[2][state][k];
-						}
-					}
-				}
-				if (state !== 0) return samples[i];
-			}
-			return null;
+		    var state = 0;
+		    for (var i = 0; i < counterExampleCandidates.length; ++i) {
+		        for (var j = 0; j < counterExampleCandidates[i].length; ++j) {
+		            for (var k = 0; k < M[3].length; ++k) {
+		                if (M[3][k] === counterExampleCandidates[i][j]) {
+		                    state = M[2][state][k];
+		                }
+		            }
+		        }
+		        if (state !== 0 && exists(samples, counterExampleCandidates[i])) return counterExampleCandidates[i];
+		        if (state === 0 && !exists(samples, counterExampleCandidates[i])) return counterExampleCandidates[i];
+		    }
+		    return null;
 		}
+
 
 
 		function learner() {
@@ -73,12 +97,15 @@
 			var isConsistentCand = null;
 			var isClosedCand = null;
 			var counterExmaple = null;
+			var M = null;
 			do {
 				do {
 					isConsistentCand = observationTable.findNotConsistent();
 					isClosedCand = observationTable.findNotClosed();
+					console.log(isConsistentCand);
+					console.log(isClosedCand);
 					if (null !== isConsistentCand) {
-						observationTable.extendByPrefix(isConsistentCand);
+						observationTable.extendBySuffix(isConsistentCand);
 					}
 
 					if (null !== isClosedCand) {
@@ -86,12 +113,14 @@
 					}
 				} while (null !== isConsistentCand || null !== isClosedCand);
 
-				var M = observationTable.makeConjecture();
+				M = observationTable.makeConjecture();
 				counterExmaple = teacher(M);
+				console.log(counterExmaple);
 				if (null !== counterExmaple) {
 					observationTable.extendByAllPrefixes(counterExmaple);
 				}
 			} while (counterExmaple !== null);
+			return M;
 		}
 
 
@@ -179,10 +208,12 @@
 						var rowj = this.getRow(this.S[j]);
 						if (this.rowEquals(rowi, rowj)) {
 							for (var k = 0; k < this.A.length; ++k) {
-								var rowi = this.getRow(this.S[i] + this.A[k]);
-								var rowj = this.getRow(this.S[j] + this.A[k]);
+								var rowi2 = this.getRow(this.S[i] + this.A[k]);
+								var rowj2 = this.getRow(this.S[j] + this.A[k]);
 								for (var l = 0; l < this.E.length; ++l) {
-									if (rowi[l] !== rowj[l]) return this.A[k] + this.E[l];
+								    if (rowi2[l] !== rowj2[l]) {
+								        return this.A[k] + this.E[l];
+								    }
 								}
 							}
 						}
@@ -202,8 +233,9 @@
 			}
 
 			this.extendBySuffix = function (e) {
-				this.E.push(e);
-				for (var i = 0; i < this.membershipTable.length; ++i) {
+			    this.E.push(e);
+			    var len = this.membershipTable.length;
+				for (var i = 0; i < len; ++i) {
 					this.membershipTable[i].push(membership(this.membershipPrefixes[i] + e));
 				}
 			}
@@ -259,7 +291,6 @@
 					for (var j = 0; j < this.A.length; ++j) {
 						var s = prefixes[i] + this.A[j];
 						var r = this.getRow(s);
-						console.log(r);
 						for (var k = 0; k < states.length; ++k) {
 							if (this.rowEquals(states[k], r)) {
 								tRow.push(k);
@@ -398,7 +429,13 @@
 			if (null !== res) console.log('t should be consistent. Please check!');
 
 			var t1 = new ObservationTable(['', '0', '1', '11'], [''], ['0', '1']);
-			if (null === t1) console.log('t1 should NOT be consistent. Please check!');
+			res = t1.findNotConsistent();
+			if (null === res) console.log('t1 should NOT be consistent. Please check!');
+
+			var t2 = new ObservationTable(['', '0', '1', '11', '01', '011'], ['', '0'], ['0', '1']);
+			res = t2.findNotConsistent();
+			if (null === res) console.log('t1 should NOT be consistent. Please check!');
+			console.log(res);
 		}
 
 		function testMakeConjecture() {
@@ -427,6 +464,11 @@
 
 		}
 
+		function testLeaner() {
+		    var M = learner();
+		    console.log(M);
+		}
+
 		testExists();
 		init();
 		testConstructor();
@@ -440,6 +482,7 @@
 		testFindNotConsistent();
 		testMakeConjecture();
 		testTeacher();
+		testLeaner();
 
 	</script>
 
