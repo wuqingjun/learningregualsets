@@ -59,20 +59,54 @@
 		    for (var i = 0; i < array.length && array[i] !== e; ++i) { }
 		    return i !== array.length;
 		}
-		//function teacher(M) {
-		//	var state = 0;
-		//	for (var i = 0; i < samples.length; ++i) {
-		//		for (var j = 0; j < samples[i].length; ++j) {
-		//			for (var k = 0; k < M[3].length; ++k) {
-		//				if (M[3][k] === samples[i][j]) {
-		//					state = M[2][state][k];
-		//				}
-		//			}
-		//		}
-		//		if (state !== 0) return samples[i];
-		//	}
-		//	return null;
-        //}
+
+		function createTable(tableData, columnHeader, rowHeader) {
+		    var table = document.createElement('table');
+		    table.style.border = "1px solid red";
+		    var tableBody = document.createElement('tbody');
+
+		    if (columnHeader !== null && columnHeader.length > 0) {
+		        var row = document.createElement('tr');
+		        var firstCell = document.createElement('th');
+		        firstCell.style.border = "1px solid black";
+		        var text = '\u2207';
+		        firstCell.appendChild(document.createTextNode(text));
+		        row.appendChild(firstCell);
+		        columnHeader.forEach(function (cellData) {
+		            var cell = document.createElement('th');
+		            cell.style.border = "1px solid black";
+		            cell.appendChild(document.createTextNode(cellData));
+		            row.appendChild(cell);
+		        });
+		        tableBody.appendChild(row);
+		    }
+
+		    var i = 0;
+
+		    tableData.forEach(function (rowData) {
+		        var row = document.createElement('tr');
+		        var cell = document.createElement('td');
+		        cell.style.border = "1px solid black";
+		        var node = document.createTextNode('q' + i);
+		        cell.style.fontWeight = 'bold';
+		        cell.appendChild(node);
+		        row.appendChild(cell);
+
+		        rowData.forEach(function (cellData) {
+		            var cell = document.createElement('td');
+		            cell.style.border = "1px solid black";
+		            cell.appendChild(document.createTextNode('q' + cellData));
+		            row.appendChild(cell);
+		        });
+
+		        tableBody.appendChild(row);
+		        ++i;
+		    });
+
+		    table.appendChild(tableBody);
+		    document.body.appendChild(table);
+            document.write('<br/>')
+		}
 
 		function teacher(M) {
 		    var state = 0;
@@ -114,6 +148,9 @@
 				} while (null !== isConsistentCand || null !== isClosedCand);
 
 				M = observationTable.makeConjecture();
+
+				createTable(M[2], symbols);
+
 				counterExmaple = teacher(M);
 				console.log(counterExmaple);
 				if (null !== counterExmaple) {
