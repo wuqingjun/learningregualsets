@@ -58,7 +58,7 @@
 				for (var j = 0; j < samples[i].length; ++j) {
 					for (var k = 0; k < M[3].length; ++k) {
 						if (M[3][k] === samples[i][j]) {
-							state = M[2][state][k]; // should be string to int.
+							state = M[2][state][k];
 						}
 					}
 				}
@@ -72,22 +72,26 @@
 			var observationTable = new ObservationTable([''], [''], ['0', '1']);
 			var isConsistentCand = null;
 			var isClosedCand = null;
+			var counterExmaple = null;
 			do {
-				isConsistentCand = observationTable.findNotConsistent();
-				isClosedCand = observationTable.findNotClosed();
-				if (null !== isConsistentCand) {
-					observationTable.extendByPrefix(isConsistentCand);
-				}
-				
-				if (null !== isClosedCand) {
-					observationTable.extendByPrefix(isClosedCand);
-				}
-			} while (null !== isConsistentCand || null !== isClosedCand);
+				do {
+					isConsistentCand = observationTable.findNotConsistent();
+					isClosedCand = observationTable.findNotClosed();
+					if (null !== isConsistentCand) {
+						observationTable.extendByPrefix(isConsistentCand);
+					}
 
-			var M = observationTable.makeConjecture();
-			var counterExmaple = teacher(M);
-			if (null === counterExmaple) { }// end;
-			else { } // continue
+					if (null !== isClosedCand) {
+						observationTable.extendByPrefix(isClosedCand);
+					}
+				} while (null !== isConsistentCand || null !== isClosedCand);
+
+				var M = observationTable.makeConjecture();
+				counterExmaple = teacher(M);
+				if (null !== counterExmaple) {
+					observationTable.extendByAllPrefixes(counterExmaple);
+				}
+			} while (counterExmaple !== null);
 		}
 
 
@@ -255,6 +259,7 @@
 					for (var j = 0; j < this.A.length; ++j) {
 						var s = prefixes[i] + this.A[j];
 						var r = this.getRow(s);
+						console.log(r);
 						for (var k = 0; k < states.length; ++k) {
 							if (this.rowEquals(states[k], r)) {
 								tRow.push(k);
@@ -401,33 +406,16 @@
 			var t = new ObservationTable(['', '0'], [''], ['0', '1']);
 
 			var M = t.makeConjecture();
-			if (!t.rowEquals(M[2][0], [1, 1])) console.log('Conjecture is wrong, please check!');
-			if (!t.rowEquals(M[2][0], [0, 1])) console.log('Conjecture is wrong, please check!');
-			//console.log(M[2]);
+
+			console.log(M[2]);
 
 			var t2 = new ObservationTable(['', '0', '1', '11', '01', '011'], ['', '0', '1'], ['0', '1']);
 
 			var M2 = t2.makeConjecture();
-			//console.log(M2[0]);
-			//console.log(M2[1]);
-			//console.log(M2[2]);
-			//console.log(M2[3]);
-		}
-        h
-		function testTeacher() {
-		    var t = new ObservationTable(['', '0'], [''], ['0', '1']);
-
-		    var M = t.makeConjecture();
-
-		    var res1 = teacher(M);
-		    if (res1 !== '11') console.log('teacher is giving wrong answer: ' + res1);
-
-		    var t2 = new ObservationTable(['', '0', '1', '11', '01', '011'], ['', '0', '1'], ['0', '1']);
-
-		    var M2 = t2.makeConjecture();
-		    var res2 = teacher(M2);
-		    if (res2 !== null) console.log('teacher is giving wrong answer: ' + res2);
-
+			console.log(M2[0]);
+			console.log(M2[1]);
+			console.log(M2[2]);
+			console.log(M2[3]);
 		}
 
 		testExists();
@@ -442,7 +430,6 @@
 		testFindNotClosed();
 		testFindNotConsistent();
 		testMakeConjecture();
-		testTeacher();
 
 	</script>
 
