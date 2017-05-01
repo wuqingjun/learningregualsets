@@ -125,11 +125,11 @@
 		    }
 		}
 
-		function createTransitionTable(tableData, columnHeader, tableName, order) {
+		function createTransitionTable(tableData, columnHeader, tableName, order, funcToCreateHeader) {
 		    var table = document.createElement('table');
 		    table.style.border = "1px solid red";
 		    var tableBody = document.createElement('tbody');
-		    createTableHeader(tableBody, columnHeader, tableName, order);
+		    funcToCreateHeader(tableBody, columnHeader, tableName, order);
 
 		    var i = 0;
 
@@ -204,8 +204,7 @@
 				M = observationTable.makeConjecture();
 
 				++mi;
-				//createTransitionTable(M[2], symbols, '\u2207', mi);
-				createTransitionTable(M.transiationTable, symbols, '\u2207', mi);
+				createTransitionTable(M.transiationTable, symbols, '\u2207', mi, createTableHeader);
 
 				counterExmaple = teacher(M);
 				console.log(counterExmaple);
