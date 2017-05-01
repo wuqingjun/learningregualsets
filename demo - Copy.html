@@ -2,18 +2,44 @@
 <html>
 <head>
 	<title>Demo</title>
+	<style>
+		.sb {
+			position: relative;
+			top: 4pt;
+			font-size: 11pt
+		}
+
+		table {
+			border-collapse: collapse;
+			float: left;
+		}
+
+		th {
+			border: 1px solid #dddddd;
+			text-align: left;
+			padding: 8px;
+			background-color: gray;
+			height: 5px;
+		}
+
+		td:first-child {
+			background-color: gray;
+		}
+	</style>
 </head>
 <body>
 
 	<p id="symbols"></p>
 	<p id="samples"></p>
 	<p id="testing"></p>
+	<p id="counterExamples"></p>
 
 
 
 	<script>
 		var symbols = ['0', '1'];
-		var samples = ['', '00', '11', '1001', '1100', '0101', '0110', '1111'];
+		var samples = ['', '00', '11', '1001', '1100', '0101', '0110', '1111', '...'];
+		var counterExampleCandidates = ['11', '011'];
 
 		function init() {
 			var samplesText = 'W = {'
@@ -36,6 +62,16 @@
 			}
 			symbolsText += '}';
 			document.getElementById('symbols').innerHTML = symbolsText;
+
+			var counterExamplesText = 'Counter Examples = {';
+			for (var i = 0; i < counterExampleCandidates.length; ++i) {
+				counterExamplesText += counterExampleCandidates[i];
+				if (i < counterExampleCandidates.length - 1) {
+					counterExamplesText += ', ';
+				}
+			}
+			counterExamplesText += '}';
+			document.getElementById('counterExamples').innerHTML = counterExamplesText;
 		}
 
 		function emptyToLambda(str) {
@@ -46,48 +82,223 @@
 		}
 
 		function membership(element) {
-			var i = samples.findIndex(function (e) { return element === e;} );
-			if (i != -1) return '1';
-			return '0';
+		    if (element.length % 2) return '0';
+		    var c = 0;
+		    for (var i = 0; i < element.length; ++i) c += element[i] === '0';
+		    return c % 2 === 0 ? '1' : '0';
 		}
 
+		function exists(array, e) {
+		    var i = 0;
+		    for (var i = 0; i < array.length && array[i] !== e; ++i) { }
+		    return i !== array.length;
+		}
+
+		function Conjecture(states, prefixes, suffixes, symbols, transitionTable, membershipTable) {
+		    this.states = states;
+		    this.prefixes = prefixes;
+		    this.suffixes = suffixes;
+		    this.symbols = symbols;
+		    this.transiationTable = transitionTable;
+		    this.membershipTabe = membershipTable;
+		}
+
+		function createSubscript(primary, sub) {
+		    var a1 = document.createElement('a');
+		    var t1 = document.createTextNode(primary);
+		    a1.appendChild(t1);
+
+		    var a2 = document.createElement('a');
+		    a2.setAttribute('class', 'sb');
+		    var t2 = document.createTextNode(sub);
+
+		    a2.appendChild(t2);
+		    a1.appendChild(a2);
+		    return a1;
+		}
+
+		function createTableHeader(tableBody, columnHeader, tableName, order){
+		    if (columnHeader !== null && columnHeader.length > 0) {
+		        var row = document.createElement('tr');
+		        var firstCell = document.createElement('th');
+		        firstCell.style.border = "1px solid black";
+
+		        firstCell.appendChild(createSubscript(tableName, order));
+
+		        row.appendChild(firstCell);
+
+		        columnHeader.forEach(function (cellData) {
+		            var cell = document.createElement('th');
+		            cell.style.border = "1px solid black";
+		            var text = cellData === '' ? '\u03BB': cellData;
+		            cell.appendChild(document.createTextNode(text ));
+		            row.appendChild(cell);
+		        });
+
+		        row.setAttribute('background-color', '#dddddd');
+		        tableBody.appendChild(row);
+		    }
+		}
+
+		function createTransitionCell(cellData) {
+		    return createSubscript('q', cellData);
+        }
+
+		function displayTable(tableData, columnHeader, rowHeaders, tableName, order, funcToCreateCell, funcToCreateRowHeader) {
+		    var table = document.createElement('table');
+		    table.style.border = "1px solid red";
+		    var tableBody = document.createElement('tbody');
+		    createTableHeader(tableBody, columnHeader, tableName, order);
+
+		    var i = 0;
+
+		    tableData.forEach(function (rowData) {
+		        var row = document.createElement('tr');
+		        var cell = document.createElement('td');
+		        cell.style.border = "1px solid black";
+		        cell.style.fontWeight = 'bold';
+		        cell.appendChild(funcToCreateRowHeader(rowHeaders[i]));
+		        row.appendChild(cell);
+
+		        rowData.forEach(function (cellData) {
+		            var cell = document.createElement('td');
+		            cell.style.border = "1px solid black";
+
+		            cell.appendChild(funcToCreateCell(cellData));
+		            row.appendChild(cell);
+		        });
+
+		        tableBody.appendChild(row);
+		        ++i;
+		    });
+
+		    table.appendChild(tableBody);
+		    return table;
+		}
+
+		function displayTables(tables) {
+			var section = document.createElement('SECTION');
+			section.style.display = 'block';
+			section.style.overflow = 'hidden';
+			section.style.padding = '5px';
+			section.style.backgroundColor = '#d9f4f3';
+
+			var label = document.createElement("LABEL");
+			var text = document.createTextNode("Conjecture: ");
+			label.appendChild(text);
+
+			var aside = document.createElement("ASIDE");
+			aside.style.display = 'block';
+			aside.style.cssFloat = 'left';
+
+			aside.appendChild(label);
+
+			section.appendChild(aside);
+			var div = document.createElement('div');
+			div.style.marginLeft = '100px';
+			for (var i = 0; i < tables.length; ++i) {
+				tables[i].style.marginLeft = '20px';
+				div.appendChild(tables[i]);
+			}
+
+			section.appendChild(div);
+
+			return section;
+		}
 
 		function teacher(M) {
-			var state = 0;
-			for (var i = 0; i < samples.length; ++i) {
-				for (var j = 0; j < samples[i].length; ++j) {
-					for (var k = 0; k < M[3].length; ++k) {
-						if (M[3][k] === samples[i][j]) {
-							state = M[2][state][k]; // should be string to int.
-						}
-					}
-				}
-				if (state !== 0) return samples[i];
-			}
-			return null;
+		    var state = 0;
+		    for (var i = 0; i < counterExampleCandidates.length; ++i) {
+		        for (var j = 0; j < counterExampleCandidates[i].length; ++j) {
+		            for (var k = 0; k < M.symbols.length; ++k) {
+		                if (M.symbols[k] === counterExampleCandidates[i][j]) {
+		                    state = M.transiationTable[state][k];
+		                }
+		            }
+		        }
+		        if (state !== 0 && exists(samples, counterExampleCandidates[i])) return counterExampleCandidates[i];
+		        if (state === 0 && !exists(samples, counterExampleCandidates[i])) return counterExampleCandidates[i];
+		    }
+		    return null;
 		}
+
 
 
 		function learner() {
 			var observationTable = new ObservationTable([''], [''], ['0', '1']);
 			var isConsistentCand = null;
 			var isClosedCand = null;
+			var counterExmaple = null;
+			var M = null;
+			var mi = 0;
 			do {
-				isConsistentCand = observationTable.findNotConsistent();
-				isClosedCand = observationTable.findNotClosed();
-				if (null !== isConsistentCand) {
-					observationTable.extendByPrefix(isConsistentCand);
-				}
-				
-				if (null !== isClosedCand) {
-					observationTable.extendByPrefix(isClosedCand);
-				}
-			} while (null !== isConsistentCand || null !== isClosedCand);
+				do {
+					isConsistentCand = observationTable.findNotConsistent();
+					isClosedCand = observationTable.findNotClosed();
+					console.log(isConsistentCand);
+					console.log(isClosedCand);
+					if (null !== isConsistentCand) {
+						observationTable.extendBySuffix(isConsistentCand);
+					}
 
-			var M = observationTable.makeConjecture();
-			var counterExmaple = teacher(M);
-			if (null === counterExmaple) { }// end;
-			else { } // continue
+					if (null !== isClosedCand) {
+						observationTable.extendByPrefix(isClosedCand);
+					}
+				} while (null !== isConsistentCand || null !== isClosedCand);
+
+				M = observationTable.makeConjecture();
+
+				++mi;
+
+				var tables = [];
+
+				var transitionTableRowHeaders = [];
+				for (var i = 0; i < M.transiationTable.length; ++i) {
+				    transitionTableRowHeaders.push(i);
+				}
+
+				var t1 = displayTable(M.membershipTabe, M.suffixes, M.prefixes, '\u039C', mi, function (cellData) {
+				    var a1 = document.createElement('a');
+				    var t1 = document.createTextNode(cellData);
+				    a1.appendChild(t1);
+				    return a1;
+				}, function (cellData) {
+				    var a1 = document.createElement('a');
+				    var t1 = document.createTextNode(cellData === '' ? '\u03BB' : cellData);
+				    a1.appendChild(t1);
+				    return a1;
+				});
+
+				tables.push(t1);
+
+				var t2 = displayTable(M.states, M.suffixes, transitionTableRowHeaders, '\u03A9', mi, function (cellData) {
+				    var a1 = document.createElement('a');
+				    var t1 = document.createTextNode(cellData);
+				    a1.appendChild(t1);
+				    return a1;
+				}, function (cellData) { return createSubscript('q', cellData); });
+
+				tables.push(t2);
+
+				var t3 = displayTable(M.transiationTable, M.symbols, transitionTableRowHeaders, '\u03B4', mi, createTransitionCell, function (cellData) {
+				    return createSubscript('q', cellData);
+				});
+
+				tables.push(t3);
+
+				var sec = displayTables(tables);
+
+				document.body.appendChild(sec);
+
+				document.write('<br/>')
+
+				counterExmaple = teacher(M);
+				console.log(counterExmaple);
+				if (null !== counterExmaple) {
+					observationTable.extendByAllPrefixes(counterExmaple);
+				}
+			} while (counterExmaple !== null);
+			return M;
 		}
 
 
@@ -175,10 +386,12 @@
 						var rowj = this.getRow(this.S[j]);
 						if (this.rowEquals(rowi, rowj)) {
 							for (var k = 0; k < this.A.length; ++k) {
-								var rowi = this.getRow(this.S[i] + this.A[k]);
-								var rowj = this.getRow(this.S[j] + this.A[k]);
+								var rowi2 = this.getRow(this.S[i] + this.A[k]);
+								var rowj2 = this.getRow(this.S[j] + this.A[k]);
 								for (var l = 0; l < this.E.length; ++l) {
-									if (rowi[l] !== rowj[l]) return this.A[k] + this.E[l];
+								    if (rowi2[l] !== rowj2[l]) {
+								        return this.A[k] + this.E[l];
+								    }
 								}
 							}
 						}
@@ -198,8 +411,9 @@
 			}
 
 			this.extendBySuffix = function (e) {
-				this.E.push(e);
-				for (var i = 0; i < this.membershipTable.length; ++i) {
+			    this.E.push(e);
+			    var len = this.membershipTable.length;
+				for (var i = 0; i < len; ++i) {
 					this.membershipTable[i].push(membership(this.membershipPrefixes[i] + e));
 				}
 			}
@@ -243,7 +457,7 @@
 					var row = this.getRow(this.S[i]);
 					var j = 0;
 					for (; j < states.length && !this.rowEquals(row, states[j]); ++j) {
-						
+
 					}
 					if (j === states.length) {
 						states.push(row);
@@ -263,9 +477,9 @@
 					}
 					transitionTable.push(tRow);
 				}
-				return [states, prefixes, transitionTable, this.A];
+				return new Conjecture(states, this.membershipPrefixes, this.E, this.A, transitionTable, this.membershipTable);
+				//return [states, prefixes, transitionTable, this.A];
 			}
-
 
 			// run initialization function: constructor!
 
@@ -295,7 +509,7 @@
 
 		function testGetRow() {
 			var t = new ObservationTable([''], [''], ['0', '1']);
-			
+
 			if (t.getRow('').length === 0) console.log('failed to get &lambda; row');
 			if (t.getRow('0').length === 0) console.log('failed to get 0 row');
 			if (t.getRow('1').length === 0) console.log('failed to get 1 row');
@@ -394,26 +608,25 @@
 			if (null !== res) console.log('t should be consistent. Please check!');
 
 			var t1 = new ObservationTable(['', '0', '1', '11'], [''], ['0', '1']);
-			if (null === t1) console.log('t1 should NOT be consistent. Please check!');
+			res = t1.findNotConsistent();
+			if (null === res) console.log('t1 should NOT be consistent. Please check!');
+
+			var t2 = new ObservationTable(['', '0', '1', '11', '01', '011'], ['', '0'], ['0', '1']);
+			res = t2.findNotConsistent();
+			if (null === res) console.log('t1 should NOT be consistent. Please check!');
+			console.log(res);
 		}
 
 		function testMakeConjecture() {
 			var t = new ObservationTable(['', '0'], [''], ['0', '1']);
 
 			var M = t.makeConjecture();
-			if (!t.rowEquals(M[2][0], [1, 1])) console.log('Conjecture is wrong, please check!');
-			if (!t.rowEquals(M[2][0], [0, 1])) console.log('Conjecture is wrong, please check!');
-			//console.log(M[2]);
 
 			var t2 = new ObservationTable(['', '0', '1', '11', '01', '011'], ['', '0', '1'], ['0', '1']);
 
 			var M2 = t2.makeConjecture();
-			//console.log(M2[0]);
-			//console.log(M2[1]);
-			//console.log(M2[2]);
-			//console.log(M2[3]);
 		}
-        
+
 		function testTeacher() {
 		    var t = new ObservationTable(['', '0'], [''], ['0', '1']);
 
@@ -430,6 +643,11 @@
 
 		}
 
+		function testLeaner() {
+		    var M = learner();
+		    console.log(M);
+		}
+
 		testExists();
 		init();
 		testConstructor();
@@ -443,6 +661,7 @@
 		testFindNotConsistent();
 		testMakeConjecture();
 		testTeacher();
+		testLeaner();
 
 	</script>
 

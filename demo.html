@@ -203,6 +203,17 @@
 			return section;
 		}
 
+		function displayConjectur(tables, counterExample) {
+			var sec = displayTables(tables);
+			
+			var label = document.createElement("LABEL");
+			label.style.marginLeft = '20px';
+			var text = document.createTextNode("Counter Example: \n" + counterExample);
+			label.appendChild(text);
+			sec.appendChild(label);
+			return sec;
+		}
+
 		function teacher(M) {
 		    var state = 0;
 		    for (var i = 0; i < counterExampleCandidates.length; ++i) {
@@ -218,8 +229,6 @@
 		    }
 		    return null;
 		}
-
-
 
 		function learner() {
 			var observationTable = new ObservationTable([''], [''], ['0', '1']);
@@ -247,49 +256,50 @@
 
 				++mi;
 
+				counterExmaple = teacher(M);
+
 				var tables = [];
 
 				var transitionTableRowHeaders = [];
 				for (var i = 0; i < M.transiationTable.length; ++i) {
-				    transitionTableRowHeaders.push(i);
+					transitionTableRowHeaders.push(i);
 				}
 
 				var t1 = displayTable(M.membershipTabe, M.suffixes, M.prefixes, '\u039C', mi, function (cellData) {
-				    var a1 = document.createElement('a');
-				    var t1 = document.createTextNode(cellData);
-				    a1.appendChild(t1);
-				    return a1;
+					var a1 = document.createElement('a');
+					var t1 = document.createTextNode(cellData);
+					a1.appendChild(t1);
+					return a1;
 				}, function (cellData) {
-				    var a1 = document.createElement('a');
-				    var t1 = document.createTextNode(cellData === '' ? '\u03BB' : cellData);
-				    a1.appendChild(t1);
-				    return a1;
+					var a1 = document.createElement('a');
+					var t1 = document.createTextNode(cellData === '' ? '\u03BB' : cellData);
+					a1.appendChild(t1);
+					return a1;
 				});
 
 				tables.push(t1);
 
 				var t2 = displayTable(M.states, M.suffixes, transitionTableRowHeaders, '\u03A9', mi, function (cellData) {
-				    var a1 = document.createElement('a');
-				    var t1 = document.createTextNode(cellData);
-				    a1.appendChild(t1);
-				    return a1;
+					var a1 = document.createElement('a');
+					var t1 = document.createTextNode(cellData);
+					a1.appendChild(t1);
+					return a1;
 				}, function (cellData) { return createSubscript('q', cellData); });
 
 				tables.push(t2);
 
 				var t3 = displayTable(M.transiationTable, M.symbols, transitionTableRowHeaders, '\u03B4', mi, createTransitionCell, function (cellData) {
-				    return createSubscript('q', cellData);
+					return createSubscript('q', cellData);
 				});
 
 				tables.push(t3);
 
-				var sec = displayTables(tables);
+				var sec = displayConjectur(tables, counterExmaple);
 
 				document.body.appendChild(sec);
 
 				document.write('<br/>')
 
-				counterExmaple = teacher(M);
 				console.log(counterExmaple);
 				if (null !== counterExmaple) {
 					observationTable.extendByAllPrefixes(counterExmaple);
@@ -656,8 +666,8 @@
 		testExtendAllPrefixes();
 		testFindNotClosed();
 		testFindNotConsistent();
-		//testMakeConjecture();
-		//testTeacher();
+		testMakeConjecture();
+		testTeacher();
 		testLeaner();
 
 	</script>
