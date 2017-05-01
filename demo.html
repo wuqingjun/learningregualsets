@@ -2,6 +2,26 @@
 <html>
 <head>
 	<title>Demo</title>
+    <style>
+        .sb {
+            position: relative;
+            top: 4pt;
+            font-size: 11pt
+        }
+        table {
+            border-collapse: collapse;
+        }
+        th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+            background-color:gray;
+            height:5px;
+        }
+        td:first-child {
+            background-color: gray;
+        }
+    </style>
 </head>
 <body>
 
@@ -60,26 +80,56 @@
 		    return i !== array.length;
 		}
 
-		function createTable(tableData, columnHeader, rowHeader) {
-		    var table = document.createElement('table');
-		    table.style.border = "1px solid red";
-		    var tableBody = document.createElement('tbody');
+		function Conjecture(states, prefixes, suffixes, symbols, transitionTable) {
+		    this.states = states;
+		    this.prefixes = prefixes;
+		    this.suffixes = suffixes;
+		    this.symbols = symbols;
+		    this.transiationTable = transitionTable;
+		}
 
+		function createSubscript(primary, sub) {
+		    var a1 = document.createElement('a');
+		    var t1 = document.createTextNode(primary);
+		    a1.appendChild(t1);
+
+		    var a2 = document.createElement('a');
+		    a2.setAttribute('class', 'sb');
+		    var t2 = document.createTextNode(sub);
+
+		    a2.appendChild(t2);
+		    a1.appendChild(a2);
+		    return a1;
+		}
+
+		function createTableHeader(tableBody, columnHeader, tableName, order)
+		{
 		    if (columnHeader !== null && columnHeader.length > 0) {
 		        var row = document.createElement('tr');
 		        var firstCell = document.createElement('th');
 		        firstCell.style.border = "1px solid black";
-		        var text = '\u2207';
-		        firstCell.appendChild(document.createTextNode(text));
+
+		        firstCell.appendChild(createSubscript(tableName, order));
+
 		        row.appendChild(firstCell);
+
 		        columnHeader.forEach(function (cellData) {
 		            var cell = document.createElement('th');
 		            cell.style.border = "1px solid black";
 		            cell.appendChild(document.createTextNode(cellData));
 		            row.appendChild(cell);
 		        });
+
+		        row.setAttribute('background-color', '#dddddd');
 		        tableBody.appendChild(row);
 		    }
+		}
+
+		function createTransitionTable(tableData, columnHeader, tableName, order) {
+		    var table = document.createElement('table');
+		    table.style.border = "1px solid red";
+		    var tableBody = document.createElement('tbody');
+		    createTableHeader(tableBody, columnHeader, tableName, order);
 
 		    var i = 0;
 
@@ -87,15 +137,18 @@
 		        var row = document.createElement('tr');
 		        var cell = document.createElement('td');
 		        cell.style.border = "1px solid black";
-		        var node = document.createTextNode('q' + i);
+		        var a1 = createSubscript('q', i);
 		        cell.style.fontWeight = 'bold';
-		        cell.appendChild(node);
+		        cell.appendChild(createSubscript('q', i));
+
 		        row.appendChild(cell);
 
 		        rowData.forEach(function (cellData) {
 		            var cell = document.createElement('td');
 		            cell.style.border = "1px solid black";
-		            cell.appendChild(document.createTextNode('q' + cellData));
+
+		            cell.appendChild(createSubscript('q', cellData));
+
 		            row.appendChild(cell);
 		        });
 
@@ -112,9 +165,9 @@
 		    var state = 0;
 		    for (var i = 0; i < counterExampleCandidates.length; ++i) {
 		        for (var j = 0; j < counterExampleCandidates[i].length; ++j) {
-		            for (var k = 0; k < M[3].length; ++k) {
-		                if (M[3][k] === counterExampleCandidates[i][j]) {
-		                    state = M[2][state][k];
+		            for (var k = 0; k < M.symbols.length; ++k) {
+		                if (M.symbols[k] === counterExampleCandidates[i][j]) {
+		                    state = M.transiationTable[state][k];
 		                }
 		            }
 		        }
@@ -132,6 +185,7 @@
 			var isClosedCand = null;
 			var counterExmaple = null;
 			var M = null;
+			var mi = 0;
 			do {
 				do {
 					isConsistentCand = observationTable.findNotConsistent();
@@ -149,7 +203,9 @@
 
 				M = observationTable.makeConjecture();
 
-				createTable(M[2], symbols);
+				++mi;
+				//createTransitionTable(M[2], symbols, '\u2207', mi);
+				createTransitionTable(M.transiationTable, symbols, '\u2207', mi);
 
 				counterExmaple = teacher(M);
 				console.log(counterExmaple);
@@ -336,7 +392,8 @@
 					}
 					transitionTable.push(tRow);
 				}
-				return [states, prefixes, transitionTable, this.A];
+				return new Conjecture(states, this.S, this.E, this.A, transitionTable);
+				//return [states, prefixes, transitionTable, this.A];
 			}
 
 			// run initialization function: constructor!
@@ -517,8 +574,8 @@
 		testExtendAllPrefixes();
 		testFindNotClosed();
 		testFindNotConsistent();
-		testMakeConjecture();
-		testTeacher();
+		//testMakeConjecture();
+		//testTeacher();
 		testLeaner();
 
 	</script>
