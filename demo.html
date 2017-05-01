@@ -80,12 +80,13 @@
 		    return i !== array.length;
 		}
 
-		function Conjecture(states, prefixes, suffixes, symbols, transitionTable) {
+		function Conjecture(states, prefixes, suffixes, symbols, transitionTable, membershipTable) {
 		    this.states = states;
 		    this.prefixes = prefixes;
 		    this.suffixes = suffixes;
 		    this.symbols = symbols;
 		    this.transiationTable = transitionTable;
+		    this.membershipTabe = membershipTable;
 		}
 
 		function createSubscript(primary, sub) {
@@ -102,8 +103,7 @@
 		    return a1;
 		}
 
-		function createTableHeader(tableBody, columnHeader, tableName, order)
-		{
+		function createTableHeader(tableBody, columnHeader, tableName, order){
 		    if (columnHeader !== null && columnHeader.length > 0) {
 		        var row = document.createElement('tr');
 		        var firstCell = document.createElement('th');
@@ -116,7 +116,8 @@
 		        columnHeader.forEach(function (cellData) {
 		            var cell = document.createElement('th');
 		            cell.style.border = "1px solid black";
-		            cell.appendChild(document.createTextNode(cellData));
+		            var text = cellData === '' ? '\u03BB': cellData;
+		            cell.appendChild(document.createTextNode(text ));
 		            row.appendChild(cell);
 		        });
 
@@ -129,11 +130,11 @@
 		    return createSubscript('q', cellData);
         }
 
-		function createTransitionTable(tableData, columnHeader, tableName, order, funcToCreateHeader, funcToCreateCell) {
+		function displayTable(tableData, columnHeader, rowHeaders, tableName, order, funcToCreateCell, funcToCreateRowHeader) {
 		    var table = document.createElement('table');
 		    table.style.border = "1px solid red";
 		    var tableBody = document.createElement('tbody');
-		    funcToCreateHeader(tableBody, columnHeader, tableName, order);
+		    createTableHeader(tableBody, columnHeader, tableName, order);
 
 		    var i = 0;
 
@@ -141,21 +142,15 @@
 		        var row = document.createElement('tr');
 		        var cell = document.createElement('td');
 		        cell.style.border = "1px solid black";
-		        var a1 = createSubscript('q', i);
 		        cell.style.fontWeight = 'bold';
-		        //cell.appendChild(createSubscript('q', i));
-		        cell.appendChild(funcToCreateCell(i));
-
+		        cell.appendChild(funcToCreateRowHeader(rowHeaders[i]));
 		        row.appendChild(cell);
 
 		        rowData.forEach(function (cellData) {
 		            var cell = document.createElement('td');
 		            cell.style.border = "1px solid black";
 
-		            //cell.appendChild(createSubscript('q', cellData));
 		            cell.appendChild(funcToCreateCell(cellData));
-
-
 		            row.appendChild(cell);
 		        });
 
@@ -215,7 +210,35 @@
 				M = observationTable.makeConjecture();
 
 				++mi;
-				createTransitionTable(M.transiationTable, symbols, '\u2207', mi, createTableHeader, createTransitionCell);
+
+        
+				var transitionTableRowHeaders = [];
+				for (var i = 0; i < M.transiationTable.length; ++i) {
+				    transitionTableRowHeaders.push(i);
+				}
+
+				displayTable(M.states, M.suffixes, transitionTableRowHeaders, '\u03A9', mi, function (cellData) {
+				    var a1 = document.createElement('a');
+				    var t1 = document.createTextNode(cellData);
+				    a1.appendChild(t1);
+				    return a1;
+				}, function (cellData) { return createSubscript('q', cellData); });
+
+				displayTable(M.membershipTabe, M.suffixes, M.prefixes, '\u039C', mi, function (cellData) {
+				    var a1 = document.createElement('a');
+				    var t1 = document.createTextNode(cellData);
+				    a1.appendChild(t1);
+				    return a1;
+				}, function (cellData) {
+				    var a1 = document.createElement('a');
+				    var t1 = document.createTextNode(cellData === '' ? '\u03BB' : cellData);
+				    a1.appendChild(t1);
+				    return a1;
+				});
+
+				displayTable(M.transiationTable, M.symbols, transitionTableRowHeaders, '\u03B4', mi, createTransitionCell, function (cellData) {
+				    return createSubscript('q', cellData);
+				});
 
 				counterExmaple = teacher(M);
 				console.log(counterExmaple);
@@ -402,7 +425,7 @@
 					}
 					transitionTable.push(tRow);
 				}
-				return new Conjecture(states, this.S, this.E, this.A, transitionTable);
+				return new Conjecture(states, this.membershipPrefixes, this.E, this.A, transitionTable, this.membershipTable);
 				//return [states, prefixes, transitionTable, this.A];
 			}
 
