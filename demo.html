@@ -8,9 +8,10 @@
             top: 4pt;
             font-size: 11pt
         }
-        table {
-            border-collapse: collapse;
-        }
+		table {
+			border-collapse: collapse;
+			float: left;
+		}
         th {
             border: 1px solid #dddddd;
             text-align: left;
@@ -28,6 +29,7 @@
 	<p id="symbols"></p>
 	<p id="samples"></p>
 	<p id="testing"></p>
+	<p id="counterExamples"></p>
 
 
 
@@ -57,6 +59,16 @@
 			}
 			symbolsText += '}';
 			document.getElementById('symbols').innerHTML = symbolsText;
+
+			var counterExamplesText = 'Counter Examples = {';
+			for (var i = 0; i < counterExampleCandidates.length; ++i) {
+				counterExamplesText += counterExampleCandidates[i];
+				if (i < counterExampleCandidates.length - 1) {
+					counterExamplesText += ', ';
+				}
+			}
+			counterExamplesText += '}';
+			document.getElementById('counterExamples').innerHTML = counterExamplesText;
 		}
 
 		function emptyToLambda(str) {
@@ -158,12 +170,37 @@
 		    });
 
 		    table.appendChild(tableBody);
-		    document.body.appendChild(table);
-            document.write('<br/>')
+		    return table;
 		}
 
-		function createStatesTable() {
-            
+		function displayTables(tables) {
+			var section = document.createElement('SECTION');
+			section.style.display = 'block';
+			section.style.overflow = 'hidden';
+			section.style.padding = '5px';
+			section.style.backgroundColor = '#d9f4f3';
+
+			var label = document.createElement("LABEL");
+			var text = document.createTextNode("Conjecture: ");
+			label.appendChild(text);
+
+			var aside = document.createElement("ASIDE");
+			aside.style.display = 'block';
+			aside.style.cssFloat = 'left';
+
+			aside.appendChild(label);
+
+			section.appendChild(aside);
+			var div = document.createElement('div');
+			div.style.marginLeft = '100px';
+			for (var i = 0; i < tables.length; ++i) {
+				tables[i].style.marginLeft = '20px';
+				div.appendChild(tables[i]);
+			}
+
+			section.appendChild(div);
+
+			return section;
 		}
 
 		function teacher(M) {
@@ -210,13 +247,14 @@
 
 				++mi;
 
-        
+				var tables = [];
+
 				var transitionTableRowHeaders = [];
 				for (var i = 0; i < M.transiationTable.length; ++i) {
 				    transitionTableRowHeaders.push(i);
 				}
 
-				displayTable(M.membershipTabe, M.suffixes, M.prefixes, '\u039C', mi, function (cellData) {
+				var t1 = displayTable(M.membershipTabe, M.suffixes, M.prefixes, '\u039C', mi, function (cellData) {
 				    var a1 = document.createElement('a');
 				    var t1 = document.createTextNode(cellData);
 				    a1.appendChild(t1);
@@ -228,16 +266,28 @@
 				    return a1;
 				});
 
-				displayTable(M.states, M.suffixes, transitionTableRowHeaders, '\u03A9', mi, function (cellData) {
+				tables.push(t1);
+
+				var t2 = displayTable(M.states, M.suffixes, transitionTableRowHeaders, '\u03A9', mi, function (cellData) {
 				    var a1 = document.createElement('a');
 				    var t1 = document.createTextNode(cellData);
 				    a1.appendChild(t1);
 				    return a1;
 				}, function (cellData) { return createSubscript('q', cellData); });
 
-				displayTable(M.transiationTable, M.symbols, transitionTableRowHeaders, '\u03B4', mi, createTransitionCell, function (cellData) {
+				tables.push(t2);
+
+				var t3 = displayTable(M.transiationTable, M.symbols, transitionTableRowHeaders, '\u03B4', mi, createTransitionCell, function (cellData) {
 				    return createSubscript('q', cellData);
 				});
+
+				tables.push(t3);
+
+				var sec = displayTables(tables);
+
+				document.body.appendChild(sec);
+
+				document.write('<br/>')
 
 				counterExmaple = teacher(M);
 				console.log(counterExmaple);
