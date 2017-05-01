@@ -33,10 +33,8 @@
 
 	<script>
 		var symbols = ['0', '1'];
-		var samples = ['', '00', '11', '1001', '1100', '0101', '0110', '1111'];
-//		var counterExampleCandidates = ['', '0', '1', '00', '01', '10', '11', '000', '001', '010', '011', '100', '101', '111'];
+		var samples = ['', '00', '11', '1001', '1100', '0101', '0110', '1111', '...'];
 		var counterExampleCandidates = ['11', '011'];
-
 
 		function init() {
 			var samplesText = 'W = {'
@@ -69,9 +67,10 @@
 		}
 
 		function membership(element) {
-			var i = samples.findIndex(function (e) { return element === e;} );
-			if (i != -1) return '1';
-			return '0';
+		    if (element.length % 2) return '0';
+		    var c = 0;
+		    for (var i = 0; i < element.length; ++i) c += element[i] === '0';
+		    return c % 2 === 0 ? '1' : '0';
 		}
 
 		function exists(array, e) {
@@ -217,13 +216,6 @@
 				    transitionTableRowHeaders.push(i);
 				}
 
-				displayTable(M.states, M.suffixes, transitionTableRowHeaders, '\u03A9', mi, function (cellData) {
-				    var a1 = document.createElement('a');
-				    var t1 = document.createTextNode(cellData);
-				    a1.appendChild(t1);
-				    return a1;
-				}, function (cellData) { return createSubscript('q', cellData); });
-
 				displayTable(M.membershipTabe, M.suffixes, M.prefixes, '\u039C', mi, function (cellData) {
 				    var a1 = document.createElement('a');
 				    var t1 = document.createTextNode(cellData);
@@ -235,6 +227,13 @@
 				    a1.appendChild(t1);
 				    return a1;
 				});
+
+				displayTable(M.states, M.suffixes, transitionTableRowHeaders, '\u03A9', mi, function (cellData) {
+				    var a1 = document.createElement('a');
+				    var t1 = document.createTextNode(cellData);
+				    a1.appendChild(t1);
+				    return a1;
+				}, function (cellData) { return createSubscript('q', cellData); });
 
 				displayTable(M.transiationTable, M.symbols, transitionTableRowHeaders, '\u03B4', mi, createTransitionCell, function (cellData) {
 				    return createSubscript('q', cellData);
