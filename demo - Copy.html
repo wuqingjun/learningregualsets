@@ -217,18 +217,24 @@
 			return sec;
 		}
 
+		function runTransition(transitionTable, candidate, symbols) {
+			var state = 0;
+			for (var i = 0; i < candidate.length; ++i) {
+				for (var j = 0; j < symbols.length; ++j) {
+					if (candidate[i] === symbols[j]) {
+						state = transitionTable[state][j];
+					}
+				}
+			}
+			return state;
+		}
+
 		function teacher(M) {
-		    var state = 0;
 		    for (var i = 0; i < counterExampleCandidates.length; ++i) {
-		        for (var j = 0; j < counterExampleCandidates[i].length; ++j) {
-		            for (var k = 0; k < M.symbols.length; ++k) {
-		                if (M.symbols[k] === counterExampleCandidates[i][j]) {
-		                    state = M.transiationTable[state][k];
-		                }
-		            }
-		        }
-		        if (state !== 0 && exists(samples, counterExampleCandidates[i])) return counterExampleCandidates[i];
-		        if (state === 0 && !exists(samples, counterExampleCandidates[i])) return counterExampleCandidates[i];
+		    	var state = runTransition(M.transiationTable, counterExampleCandidates[i], M.symbols);
+		        var isMember = membership(counterExampleCandidates[i]);
+		        if (state !== 0 && '1' === isMember ) return counterExampleCandidates[i];
+		        if (state === 0 && '0' === isMember) return counterExampleCandidates[i];
 		    }
 		    return null;
 		}
@@ -658,6 +664,18 @@
 		    console.log(M);
 		}
 
+		function testRunTransition() {
+			var transitionTable = [[1, 1], [0, 1]];
+			var symbols = ['0', '1'];
+			var res = runTransition(transitionTable, '11', symbols);
+
+			if (res !== 1) console.log('result of running transition is wrong, please check!');
+
+			transitionTable = [[1, 2], [0, 2], [2, 0]];
+			res = runTransition(transitionTable, '011', symbols);
+			if (res !== 0) console.log('result of running transition is wrong, please check!');
+		}
+
 		testExists();
 		init();
 		testConstructor();
@@ -670,8 +688,13 @@
 		testFindNotClosed();
 		testFindNotConsistent();
 		testMakeConjecture();
-		testTeacher();
+
 		testLeaner();
+
+
+		testRunTransition();
+		testTeacher();
+
 
 	</script>
 
