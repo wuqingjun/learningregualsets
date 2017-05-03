@@ -125,6 +125,8 @@
 			this.Next = function () {
 				return null;
 			}
+			this.Reset = function () {
+			}
 		}
 
 		function HardedCodedExample(examples) {
@@ -136,6 +138,10 @@
 		HardedCodedExample.prototype.constructor = HardedCodedExample;
 		HardedCodedExample.prototype.Next = function () {
 			return this.CurrentIndex < this.Examples.length ? this.Examples[this.CurrentIndex++] : null;
+		}
+
+		HardedCodedExample.prototype.Reset = function () {
+			this.CurrentIndex = 0;
 		}
 
 		function BruteForcedExample(maxNum) {
@@ -156,6 +162,11 @@
 			}
 
 			return res;
+		}
+
+		BruteForcedExample.prototype.Reset = function () {
+			this.Base = 1;
+			this.Number = 0;
 		}
 
 		function numberToBinaryString(n, base) {
@@ -194,6 +205,8 @@
 			} else {
 				appliedCase = new EvenZeroAndOnesCase();
 			}
+
+			counterExampleSelectedGenerator.Reset();
 
 			var M = learner();
 			console.log(M);
